@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily MCQ Practice</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f2f4f8;
+  padding: 10px;
+}
+
+.container {
+  max-width: 650px;
+  background: #fff;
+  margin: auto;
+  padding: 18px;
+  border-radius: 12px;
+  box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+}
+
+h2 { font-size: 18px; }
+
+.timer {
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+.timer.danger { color: red; }
+
+.option {
+  padding: 14px;
+  margin: 10px 0;
+  background: #eee;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.correct { background: #b6f2c2 !important; }
+.wrong { background: #f5b7b1 !important; }
+
+.explanation {
+  margin-top: 12px;
+  padding: 12px;
+  background: #eef2ff;
+  border-left: 4px solid #4f46e5;
+  display: none;
+}
+
+button {
+  padding: 10px;
+  margin-top: 10px;
+  width: 100%;
+  border-radius: 6px;
+  border: none;
+  font-size: 15px;
+}
+
+.next-btn { background: #4f46e5; color: white; display: none; }
+.admin-btn { background: #000; color: white; margin-top: 20px; }
+.save-btn { background: #16a34a; color: white; }
+
+.admin-panel {
+  display: none;
+  margin-top: 20px;
+}
+
+textarea {
+  width: 100%;
+  padding: 8px;
+  margin-top: 6px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <!-- QUIZ -->
+  <div id="quiz">
+    <div class="timer" id="timer"></div>
+    <h2 id="question"></h2>
+    <div id="options"></div>
+    <div class="explanation" id="explanation"></div>
+    <button class="next-btn" id="nextBtn">Next</button>
+    <div id="score"></div>
+  </div>
+
+  <!-- ADMIN -->
+  <button class="admin-btn" onclick="adminLogin()">Admin Mode</button>
+
+  <div class="admin-panel" id="adminPanel">
+    <h3>Admin Question Editor (Exactly 5 Questions)</h3>
+    <textarea id="editor" rows="16"></textarea>
+    <button class="save-btn" onclick="saveQuestions()">Save Today's Questions</button>
+  </div>
+
+</div>
+
+<script>
+/* ================= CONFIG ================= */
+const ADMIN_PASSWORD = "Falak@786";
+const QUESTIONS_PER_DAY = 5;
+const TIME_PER_QUESTION = 90;
+
+/* ================= DATA ================= */
+let questions = JSON.parse(localStorage.getItem("mcq_questions")) || [
+  {
+    question: "What is the capital of India?",
+    options: ["Mumbai", "Delhi", "Kolkata", "Chennai"],
+    correct: 1,
+    explanation: "Delhi is the capital of India."
+  },
+  {
+    question: "Which indicator measures inflation?",
+    options: ["GDP", "CPI", "IIP", "Repo Rate"],
+    correct: 1,
+    explanation: "CPI measures inflation."
+  },
+  {
+    question: "Who is the father of economics?",
+    options: ["Keynes", "Adam Smith", "Ricardo", "Marshall"],
+    correct: 1,
+    explanation: "Adam Smith is the father of economics."
+  },
+  {
+    question: "IPO stands for?",
+    options: ["Initial Price Offer", "Initial Public Offering", "Internal Public Offer", "Indian Public Offer"],
+    correct: 1,
+    explanation: "IPO means Initial Public Offering."
+  },
+  {
+    question: "Long-term funds are raised from?",
+    options: ["Money Market", "Capital Market", "Forex Market", "Commodity Market"],
+    correct: 1,
+    explanation: "Capital Market raises long-term funds."
+  }
+];
+
+/* ================= STATE ================= */
+let index = 0, correct = 0, wrong = 0, answered = false;
+let timer, timeLeft;
+
+/* ================= ELEMENTS ================= */
+const qEl = document.getElementById("question");
+const optEl = document.getElementById("options");
+const expEl = document.getElementById("explanation");
+const nextBtn = document.getElementById("nextBtn");
+const scoreEl = document.getElementById("score");
+const timerEl = document.getElementById("timer");
+
+/* ================= QUIZ LOGIC ================= */
+function startTimer() {
+  timeLeft = TIME_PER_QUESTION;
+  timerEl.classList.remove("danger");
+  timerEl.innerText = `⏱ ${timeLeft}s`;
+
+  timer = setInterval(() => {
+    timeLeft--;
+    timerEl.innerText = `⏱ ${timeLeft}s`;
+    if (timeLeft <= 5) timerEl.classList.add("danger");
+    if (timeLeft === 0) autoSubmit();
+  }, 1000);
+}
+
+function loadQuestion() {
+  answered = false;
+  expEl.style.display = "none";
+  nextBtn.style.display = "none";
+  optEl.innerHTML = "";
+
+  const q = questions[index];
+  qEl.innerText = `Q${index + 1}. ${q.question}`;
+
+  q.options.forEach((o, i) => {
+    const d = document.createElement("div");
+    d.className = "option";
+    d.innerText = o;
+    d.onclick = () => selectOption(d, i);
+    optEl.appendChild(d);
+  });
+
+  clearInterval(timer);
+  startTimer();
+}
+
+function selectOption(el, i) {
+  if (answered) return;
+  answered = true;
+  clearInterval(timer);
+
+  const q = questions[index];
+  document.querySelectorAll(".option")[q.correct].classList.add("correct");
+
+  if (i === q.correct) correct++;
+  else { el.classList.add("wrong"); wrong++; }
+
+  expEl.innerText = "Explanation: " + q.explanation;
+  expEl.style.display = "block";
+  nextBtn.style.display = "block";
+}
+
+function autoSubmit() {
+  if (answered) return;
+  answered = true;
+  clearInterval(timer);
+
+  wrong++;
+  document.querySelectorAll(".option")[questions[index].correct].classList.add("correct");
+  expEl.innerText = "Time up! " + questions[index].explanation;
+  expEl.style.display = "block";
+  nextBtn.style.display = "block";
+}
+
+nextBtn.onclick = () => {
+  index++;
+  if (index < QUESTIONS_PER_DAY) loadQuestion();
+  else showResult();
+};
+
+function showResult() {
+  clearInterval(timer);
+  qEl.innerText = "Today's Performance Summary 📊";
+  optEl.innerHTML = "";
+  timerEl.innerText = "";
+
+  const accuracy = ((correct / QUESTIONS_PER_DAY) * 100).toFixed(2);
+
+  let remark = "";
+  if (accuracy >= 80) remark = "🌟 Excellent work today! Keep it up.";
+  else if (accuracy >= 50) remark = "👍 Good effort. A little more practice will help.";
+  else remark = "📘 Needs improvement. Revise and try again tomorrow.";
+
+  scoreEl.innerHTML = `
+    ✅ Correct: ${correct}<br>
+    ❌ Incorrect: ${wrong}<br>
+    🎯 Accuracy: <b>${accuracy}%</b><br><br>
+    <b>${remark}</b>
+  `;
+}
+
+/* ================= ADMIN ================= */
+function adminLogin() {
+  const pass = prompt("Enter Admin Password:");
+  if (pass === ADMIN_PASSWORD) {
+    document.getElementById("adminPanel").style.display = "block";
+    document.getElementById("editor").value =
+      JSON.stringify(questions, null, 2);
+  } else {
+    alert("Wrong password");
+  }
+}
+
+function saveQuestions() {
+  try {
+    const newQs = JSON.parse(document.getElementById("editor").value);
+
+    if (!Array.isArray(newQs) || newQs.length !== QUESTIONS_PER_DAY) {
+      alert(`You must save exactly ${QUESTIONS_PER_DAY} questions.`);
+      return;
+    }
+
+    localStorage.setItem("mcq_questions", JSON.stringify(newQs));
+    alert("Questions saved for today!");
+    location.reload();
+  } catch {
+    alert("Invalid JSON format");
+  }
+}
+
+/* ================= INIT ================= */
+loadQuestion();
+</script>
+
+</body>
+</html>
