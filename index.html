@@ -3,275 +3,235 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Daily MCQ Practice</title>
+<title>Merit Academy MCQ Test</title>
 
 <style>
 body {
   font-family: Arial, sans-serif;
-  background: #f2f4f8;
-  padding: 10px;
+  margin: 0;
+  background: #f4f8ff;
+  text-align: center;
+}
+
+header {
+  background: #0b3c5d;
+  color: white;
+  padding: 12px;
+  font-size: 20px;
+  font-weight: bold;
 }
 
 .container {
-  max-width: 650px;
-  background: #fff;
+  padding: 20px;
+  max-width: 600px;
   margin: auto;
-  padding: 18px;
-  border-radius: 12px;
-  box-shadow: 0 6px 15px rgba(0,0,0,0.1);
-}
-
-h2 { font-size: 18px; }
-
-.timer {
-  font-weight: bold;
-  margin-bottom: 10px;
-}
-.timer.danger { color: red; }
-
-.option {
-  padding: 14px;
-  margin: 10px 0;
-  background: #eee;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.correct { background: #b6f2c2 !important; }
-.wrong { background: #f5b7b1 !important; }
-
-.explanation {
-  margin-top: 12px;
-  padding: 12px;
-  background: #eef2ff;
-  border-left: 4px solid #4f46e5;
-  display: none;
 }
 
 button {
-  padding: 10px;
-  margin-top: 10px;
-  width: 100%;
-  border-radius: 6px;
+  padding: 12px 20px;
+  font-size: 16px;
   border: none;
-  font-size: 15px;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
-.next-btn { background: #4f46e5; color: white; display: none; }
-.admin-btn { background: #000; color: white; margin-top: 20px; }
-.save-btn { background: #16a34a; color: white; }
+.start-btn {
+  background: #0b3c5d;
+  color: white;
+  width: 100%;
+  margin-top: 15px;
+}
 
-.admin-panel {
-  display: none;
-  margin-top: 20px;
+.option {
+  background: #eee;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.correct { background: #b6f5c3 !important; }
+.wrong { background: #f7b2b2 !important; }
+
+.hidden { display: none; }
+
+#timer {
+  font-weight: bold;
+  margin-bottom: 10px;
 }
 
 textarea {
   width: 100%;
-  padding: 8px;
-  margin-top: 6px;
+  height: 200px;
+}
+
+.admin-btn {
+  margin-top: 20px;
+  background: black;
+  color: white;
+  width: 100%;
 }
 </style>
 </head>
 
 <body>
 
+<header>Merit Academy</header>
+
 <div class="container">
 
-  <!-- QUIZ -->
-  <div id="quiz">
-    <div class="timer" id="timer"></div>
-    <h2 id="question"></h2>
-    <div id="options"></div>
-    <div class="explanation" id="explanation"></div>
-    <button class="next-btn" id="nextBtn">Next</button>
-    <div id="score"></div>
-  </div>
+<!-- START PAGE -->
+<div id="startPage">
+  <!-- 🔽 REPLACE LOGO URL BELOW -->
+  <img src="https://instasize.com/p/08e8d14ccc9b78f6bc78b56e7bf0a576d95d09b5e1727ec551c3262ad96ee9ee" style="max-width:100%; margin-bottom:10px;">
+  <h3>~ by CTP Falak Meer</h3>
 
-  <!-- ADMIN -->
-  <button class="admin-btn" onclick="adminLogin()">Admin Mode</button>
+  <input type="text" id="studentName" placeholder="Enter your name" style="width:100%; padding:10px; font-size:16px;">
+  <button class="start-btn" onclick="startTest()">Start Test</button>
+</div>
 
-  <div class="admin-panel" id="adminPanel">
-    <h3>Admin Question Editor (Exactly 5 Questions)</h3>
-    <textarea id="editor" rows="16"></textarea>
-    <button class="save-btn" onclick="saveQuestions()">Save Today's Questions</button>
-  </div>
+<!-- QUIZ PAGE -->
+<div id="quizPage" class="hidden">
+  <div id="timer">Time: <span id="time">10</span>s</div>
+  <h3 id="question"></h3>
+  <div id="options"></div>
+  <p id="explanation"></p>
+</div>
+
+<!-- RESULT PAGE -->
+<div id="resultPage" class="hidden">
+  <h2>Today's Performance</h2>
+  <p id="finalName"></p>
+  <p id="finalScore"></p>
+  <p id="finalAccuracy"></p>
+</div>
+
+<!-- ADMIN -->
+<button class="admin-btn" onclick="adminMode()">Admin Mode</button>
+
+<div id="adminPanel" class="hidden">
+  <h3>Admin Question Editor (Exactly 5 Questions)</h3>
+  <textarea id="adminInput"></textarea>
+  <button class="start-btn" onclick="saveQuestions()">Save Questions</button>
+</div>
 
 </div>
 
 <script>
-/* ================= CONFIG ================= */
-const ADMIN_PASSWORD = "Falak@786";
-const QUESTIONS_PER_DAY = 5;
-const TIME_PER_QUESTION = 90;
-
-/* ================= DATA ================= */
-let questions = JSON.parse(localStorage.getItem("mcq_questions")) || [
+const ADMIN_PASSWORD = "FalakPardiwala@786";
+let questions = JSON.parse(localStorage.getItem("questions")) || [
   {
-    question: "What is the capital of India?",
-    options: ["Mumbai", "Delhi", "Kolkata", "Chennai"],
-    correct: 1,
-    explanation: "Delhi is the capital of India."
-  },
-  {
-    question: "Which indicator measures inflation?",
-    options: ["GDP", "CPI", "IIP", "Repo Rate"],
-    correct: 1,
-    explanation: "CPI measures inflation."
-  },
-  {
-    question: "Who is the father of economics?",
-    options: ["Keynes", "Adam Smith", "Ricardo", "Marshall"],
-    correct: 1,
-    explanation: "Adam Smith is the father of economics."
-  },
-  {
-    question: "IPO stands for?",
-    options: ["Initial Price Offer", "Initial Public Offering", "Internal Public Offer", "Indian Public Offer"],
-    correct: 1,
-    explanation: "IPO means Initial Public Offering."
-  },
-  {
-    question: "Long-term funds are raised from?",
-    options: ["Money Market", "Capital Market", "Forex Market", "Commodity Market"],
-    correct: 1,
-    explanation: "Capital Market raises long-term funds."
+    "question": "What is the capital of India?",
+    "options": ["Mumbai", "Delhi", "Kolkata", "Chennai"],
+    "correct": 1,
+    "explanation": "Delhi is the capital of India."
   }
 ];
 
-/* ================= STATE ================= */
-let index = 0, correct = 0, wrong = 0, answered = false;
-let timer, timeLeft;
+let index = 0, correct = 0, wrong = 0, timer, timeLeft = 10;
+let student = "";
 
-/* ================= ELEMENTS ================= */
-const qEl = document.getElementById("question");
-const optEl = document.getElementById("options");
-const expEl = document.getElementById("explanation");
-const nextBtn = document.getElementById("nextBtn");
-const scoreEl = document.getElementById("score");
-const timerEl = document.getElementById("timer");
-
-/* ================= QUIZ LOGIC ================= */
-function startTimer() {
-  timeLeft = TIME_PER_QUESTION;
-  timerEl.classList.remove("danger");
-  timerEl.innerText = `⏱ ${timeLeft}s`;
-
-  timer = setInterval(() => {
-    timeLeft--;
-    timerEl.innerText = `⏱ ${timeLeft}s`;
-    if (timeLeft <= 5) timerEl.classList.add("danger");
-    if (timeLeft === 0) autoSubmit();
-  }, 1000);
+function startTest() {
+  student = document.getElementById("studentName").value.trim();
+  if (!student) return alert("Please enter your name");
+  document.getElementById("startPage").classList.add("hidden");
+  document.getElementById("quizPage").classList.remove("hidden");
+  loadQuestion();
 }
 
 function loadQuestion() {
-  answered = false;
-  expEl.style.display = "none";
-  nextBtn.style.display = "none";
-  optEl.innerHTML = "";
+  clearInterval(timer);
+  timeLeft = 10;
+  document.getElementById("time").textContent = timeLeft;
 
   const q = questions[index];
-  qEl.innerText = `Q${index + 1}. ${q.question}`;
+  document.getElementById("question").textContent = `Q${index + 1}. ${q.question}`;
+  document.getElementById("explanation").textContent = "";
 
-  q.options.forEach((o, i) => {
-    const d = document.createElement("div");
-    d.className = "option";
-    d.innerText = o;
-    d.onclick = () => selectOption(d, i);
-    optEl.appendChild(d);
+  const optionsDiv = document.getElementById("options");
+  optionsDiv.innerHTML = "";
+
+  q.options.forEach((opt, i) => {
+    const div = document.createElement("div");
+    div.className = "option";
+    div.textContent = opt;
+    div.onclick = () => selectAnswer(div, i);
+    optionsDiv.appendChild(div);
   });
 
-  clearInterval(timer);
-  startTimer();
+  timer = setInterval(() => {
+    timeLeft--;
+    document.getElementById("time").textContent = timeLeft;
+    if (timeLeft === 0) {
+      clearInterval(timer);
+      wrong++;
+      showCorrect();
+    }
+  }, 1000);
 }
 
-function selectOption(el, i) {
-  if (answered) return;
-  answered = true;
+function selectAnswer(el, i) {
   clearInterval(timer);
+  const q = questions[index];
+  const options = document.querySelectorAll(".option");
 
+  options.forEach(o => o.onclick = null);
+
+  if (i === q.correct) {
+    el.classList.add("correct");
+    correct++;
+  } else {
+    el.classList.add("wrong");
+    options[q.correct].classList.add("correct");
+    wrong++;
+  }
+
+  document.getElementById("explanation").textContent = q.explanation;
+  setTimeout(nextQuestion, 2000);
+}
+
+function showCorrect() {
   const q = questions[index];
   document.querySelectorAll(".option")[q.correct].classList.add("correct");
-
-  if (i === q.correct) correct++;
-  else { el.classList.add("wrong"); wrong++; }
-
-  expEl.innerText = "Explanation: " + q.explanation;
-  expEl.style.display = "block";
-  nextBtn.style.display = "block";
+  document.getElementById("explanation").textContent = q.explanation;
+  setTimeout(nextQuestion, 2000);
 }
 
-function autoSubmit() {
-  if (answered) return;
-  answered = true;
-  clearInterval(timer);
-
-  wrong++;
-  document.querySelectorAll(".option")[questions[index].correct].classList.add("correct");
-  expEl.innerText = "Time up! " + questions[index].explanation;
-  expEl.style.display = "block";
-  nextBtn.style.display = "block";
-}
-
-nextBtn.onclick = () => {
+function nextQuestion() {
   index++;
-  if (index < QUESTIONS_PER_DAY) loadQuestion();
+  if (index < questions.length) loadQuestion();
   else showResult();
-};
+}
 
 function showResult() {
-  clearInterval(timer);
-  qEl.innerText = "Today's Performance Summary 📊";
-  optEl.innerHTML = "";
-  timerEl.innerText = "";
+  document.getElementById("quizPage").classList.add("hidden");
+  document.getElementById("resultPage").classList.remove("hidden");
 
-  const accuracy = ((correct / QUESTIONS_PER_DAY) * 100).toFixed(2);
-
-  let remark = "";
-  if (accuracy >= 80) remark = "🌟 Excellent work today! Keep it up.";
-  else if (accuracy >= 50) remark = "👍 Good effort. A little more practice will help.";
-  else remark = "📘 Needs improvement. Revise and try again tomorrow.";
-
-  scoreEl.innerHTML = `
-    ✅ Correct: ${correct}<br>
-    ❌ Incorrect: ${wrong}<br>
-    🎯 Accuracy: <b>${accuracy}%</b><br><br>
-    <b>${remark}</b>
-  `;
+  document.getElementById("finalName").textContent = `Name: ${student}`;
+  document.getElementById("finalScore").textContent =
+    `Correct: ${correct} | Incorrect: ${wrong}`;
+  document.getElementById("finalAccuracy").textContent =
+    `Accuracy: ${Math.round((correct / questions.length) * 100)}%`;
 }
 
-/* ================= ADMIN ================= */
-function adminLogin() {
-  const pass = prompt("Enter Admin Password:");
-  if (pass === ADMIN_PASSWORD) {
-    document.getElementById("adminPanel").style.display = "block";
-    document.getElementById("editor").value =
-      JSON.stringify(questions, null, 2);
-  } else {
-    alert("Wrong password");
-  }
+function adminMode() {
+  const pass = prompt("Enter Admin Password");
+  if (pass !== ADMIN_PASSWORD) return alert("Wrong password");
+  document.getElementById("adminPanel").classList.toggle("hidden");
+  document.getElementById("adminInput").value =
+    JSON.stringify(questions, null, 2);
 }
 
 function saveQuestions() {
   try {
-    const newQs = JSON.parse(document.getElementById("editor").value);
-
-    if (!Array.isArray(newQs) || newQs.length !== QUESTIONS_PER_DAY) {
-      alert(`You must save exactly ${QUESTIONS_PER_DAY} questions.`);
-      return;
-    }
-
-    localStorage.setItem("mcq_questions", JSON.stringify(newQs));
-    alert("Questions saved for today!");
-    location.reload();
+    const data = JSON.parse(document.getElementById("adminInput").value);
+    if (data.length !== 5) return alert("Exactly 5 questions required");
+    localStorage.setItem("questions", JSON.stringify(data));
+    alert("Questions saved!");
   } catch {
     alert("Invalid JSON format");
   }
 }
-
-/* ================= INIT ================= */
-loadQuestion();
 </script>
 
 </body>
